@@ -6,11 +6,14 @@ import { User } from './entities/user.entity';
 import { Repository } from 'typeorm';
 import * as bcrypt from 'bcrypt';
 import { LoginUserDto } from './dto/login-user.dto';
+import { JwtService } from '@nestjs/jwt';
 
 @Injectable()
 export class AuthService {
   // Para usar registrar en la base de datos
-  constructor(@InjectRepository(User) private repoUser: Repository<User>) {}
+  constructor(
+    @InjectRepository(User) private repoUser: Repository<User>,
+    private jwtService: JwtService) {}
 
   async create(createUserDto: CreateUserDto) {
     const {email, password} = createUserDto;
@@ -66,7 +69,19 @@ export class AuthService {
       throw new UnauthorizedException(error);
     }
 
-    // 3.- Regresar el token JWT
+    // 3.- Regresar el token JWT (JSON Web Token)
+    // El token es la credencial
+    // Datos significativos
+
+    // Subject (sujeto) - Identifica de manera única
+    const payload = {
+      sub: emailExist.id,
+      name: emailExist.name,
+      email: emailExist.email
+    }
+
+    const token = await this.jwtService.signAsync(payload);
+    return {token};
   }
 
   findAll() {
